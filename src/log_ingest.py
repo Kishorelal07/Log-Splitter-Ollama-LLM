@@ -13,7 +13,8 @@ import re
 import sys
 
 import chromadb
-import requests
+
+from ollama_utils import DEFAULT_OLLAMA_HOST, check_ollama, embed_texts
 
 LOG_LINE_RE = re.compile(
     r"^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+"
@@ -27,7 +28,6 @@ SUCCESS_KEYWORDS = ("success", "succeeded", "completed", "approved")
 
 EMBED_MODEL = "nomic-embed-text"
 EMBED_BATCH_SIZE = 32
-DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 
 
 def mask_sensitive(text):
@@ -122,19 +122,6 @@ def template_id(template):
     return "log_" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
 
 
-def embed_texts(texts, ollama_host):
-    embeddings = []
-    for i in range(0, len(texts), EMBED_BATCH_SIZE):
-        batch = texts[i : i + EMBED_BATCH_SIZE]
-        resp = requests.post(
-            f"{ollama_host}/api/embed",
-            json={"model": EMBED_MODEL, "input": batch},
-        )
-        resp.raise_for_status()
-        embeddings.extend(resp.json()["embeddings"])
-    return embeddings
-
-
 def main():
     parser = argparse.ArgumentParser(description="Index a log file into Chroma via local Ollama embeddings.")
     parser.add_argument("--log-file", default="sample_logs/production.log")
@@ -144,9 +131,7 @@ def main():
     parser.add_argument("--reset", action="store_true", help="Delete and recreate the collection first")
     args = parser.parse_args()
 
-    try:
-        requests.get(f"{args.ollama_host}/api/tags", timeout=3).raise_for_status()
-    except requests.RequestException:
+    if not check_ollama(args.ollama_host):
         print(
             f"ERROR: could not reach Ollama at {args.ollama_host}. "
             f"Is it running? (start the Ollama app, or run `ollama serve`)",
@@ -164,7 +149,7 @@ def main():
     texts = [build_embed_text(t) for t in templates]
 
     print(f"Embedding {len(texts)} templates with Ollama ({EMBED_MODEL}) ...")
-    embeddings = embed_texts(texts, args.ollama_host)
+    embeddings = embed_texts(texts, EMBED_MODEL, args.ollama_host, EMBED_BATCH_SIZE)
 
     client = chromadb.PersistentClient(path=args.persist_dir)
     if args.reset:
