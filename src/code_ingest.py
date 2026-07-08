@@ -222,7 +222,8 @@ def main():
         texts.append(build_embed_text(rel_path, language, chunk, file_lines_cache[rel_path]))
 
     print(f"Embedding {len(texts)} chunks with Ollama ({EMBED_MODEL}) ...")
-    embeddings = embed_texts(texts, EMBED_MODEL, args.ollama_host, EMBED_BATCH_SIZE)
+    embed_inputs = [f"search_document: {t}" for t in texts]
+    embeddings = embed_texts(embed_inputs, EMBED_MODEL, args.ollama_host, EMBED_BATCH_SIZE)
 
     client = chromadb.PersistentClient(path=args.persist_dir)
     if args.reset:

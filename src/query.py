@@ -33,7 +33,7 @@ SYSTEM_PROMPT = (
 
 
 def embed_query(question, host):
-    return embed_texts([question], EMBED_MODEL, host, batch_size=1)[0]
+    return embed_texts([f"search_query: {question}"], EMBED_MODEL, host, batch_size=1)[0]
 
 
 def query_collection(collection, query_embedding, top_k, where=None):
