@@ -11,11 +11,16 @@ from ollama_utils import embed_query
 class SearchCodeTool(BaseTool):
     name = "search_code"
     description = (
-        "Semantic search over indexed functions, methods, and classes in "
-        "the codebase. Returns WHERE relevant code lives (file path, line "
-        "range, qualified name) with a similarity score -- it does not "
-        "return the code's contents. Call read_file afterwards to see the "
-        "actual code at a returned location."
+        "Searches THIS project's indexed codebase to find WHERE specific "
+        "logic lives (file path, line range, qualified name, similarity "
+        "score) -- it does not return the code's contents. Use ONLY when "
+        "the question needs to locate real code in this repository (e.g. "
+        "'where is addDataToGrid implemented', 'find the code causing this "
+        "stack trace', 'show where LoanService calls CustomerService'). Do "
+        "NOT use for general programming concepts, language or framework "
+        "explanations, or anything answerable without looking at this "
+        "specific codebase. Call read_file afterwards to see the actual "
+        "code at a returned location."
     )
     parameters = {
         "type": "object",

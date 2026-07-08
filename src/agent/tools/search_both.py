@@ -11,11 +11,13 @@ from agent.tools.search_logs import SearchLogsTool
 class SearchBothTool(BaseTool):
     name = "search_both"
     description = (
-        "Searches logs and code together in one call. Use this only when "
-        "the question could plausibly be answered by either -- for example "
-        "'what's going wrong with PAN verification' could mean 'show me the "
-        "failing logs' or 'show me the verification code'. Prefer the more "
-        "specific search_logs or search_code when the intent is clear."
+        "Searches logs and code together in one call. Use ONLY when the "
+        "question is already established to be project-specific AND it's "
+        "genuinely ambiguous whether the answer lives in logs or in code "
+        "(e.g. 'what's going wrong with PAN verification' could mean the "
+        "failing logs or the verification code itself). Prefer the more "
+        "specific search_logs or search_code whenever the intent is clear, "
+        "and never use this for general-knowledge questions."
     )
     parameters = {
         "type": "object",

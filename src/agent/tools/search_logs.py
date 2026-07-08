@@ -25,10 +25,15 @@ class LogFilters:
 class SearchLogsTool(BaseTool):
     name = "search_logs"
     description = (
-        "Semantic search over indexed production log templates. Use this "
-        "when the user asks about errors, failures, successes, or anything "
-        "that would show up in application logs. Supports optional filters "
-        "by outcome status or log level."
+        "Searches THIS project's indexed production log data. Use ONLY when "
+        "the question is about actual runtime behavior of this system: "
+        "production failures, error patterns, stack traces that occurred, "
+        "debugging a real incident, or project-specific application errors "
+        "(e.g. 'why is PAN verification failing', 'show today's failed "
+        "logs'). Do NOT use for definitions, general programming concepts, "
+        "HTTP status code explanations, language or framework concepts, or "
+        "anything answerable from general knowledge. Supports optional "
+        "filters by outcome status or log level."
     )
     parameters = {
         "type": "object",

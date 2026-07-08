@@ -27,10 +27,11 @@ class ReadFileTool(BaseTool):
     name = "read_file"
     description = (
         "Reads the current contents of a file from the indexed codebase, "
-        "fresh from disk. Optionally restrict to a line range (1-indexed, "
-        "inclusive) -- use this after search_code or list_functions to see "
-        "the actual code at a specific location, or omit the range to read "
-        "an entire file."
+        "fresh from disk. Use ONLY after search_code or list_functions has "
+        "already identified a specific file and location you need to see -- "
+        "never as a first step, and never to look up general programming "
+        "concepts. Optionally restrict to a line range (1-indexed, "
+        "inclusive), or omit the range to read an entire file."
     )
     parameters = {
         "type": "object",

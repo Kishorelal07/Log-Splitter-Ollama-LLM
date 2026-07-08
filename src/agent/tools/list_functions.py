@@ -9,10 +9,11 @@ from chroma_store import CODE_COLLECTION, ChromaStore
 class ListFunctionsTool(BaseTool):
     name = "list_functions"
     description = (
-        "Lists every function, method, and class the code-indexing pipeline "
-        "found in a specific file, with their line ranges. Use this to get "
-        "a table of contents for a file before deciding what to read_file. "
-        "The path must match exactly what search_code returned."
+        "Lists every function, method, and class already found in a "
+        "specific file, with line ranges -- a table of contents, not a "
+        "search. Use ONLY when you already know the exact file path (e.g. "
+        "from search_code) and want an overview before deciding what to "
+        "read_file. The path must match exactly what search_code returned."
     )
     parameters = {
         "type": "object",
