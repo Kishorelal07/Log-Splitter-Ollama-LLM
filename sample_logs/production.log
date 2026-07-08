@@ -1,0 +1,43 @@
+2024-01-15 08:58:02 INFO AuthService - User login successful for user_id 88213
+2024-01-15 08:58:05 INFO AuthService - User login successful for user_id 91042
+2024-01-15 09:00:11 INFO PanService - PAN verification initiated for PAN ABCDE1234F
+2024-01-15 09:00:12 INFO NsdlApiClient - Calling NSDL API for PAN ABCDE1234F
+2024-01-15 09:01:45 INFO PanService - PAN verification initiated for PAN QWERT5678K
+2024-01-15 09:01:46 INFO NsdlApiClient - Calling NSDL API for PAN QWERT5678K
+2024-01-15 09:02:30 ERROR PanService - PAN verification failed: name mismatch for PAN ABCDE1234F
+2024-01-15 09:03:15 WARN KycController - Retrying PAN verification for PAN ABCDE1234F, attempt 2
+2024-01-15 09:03:50 INFO PanService - PAN verification initiated for PAN ZXCVB4321M
+2024-01-15 09:03:51 INFO NsdlApiClient - Calling NSDL API for PAN ZXCVB4321M
+2024-01-15 09:04:22 ERROR PanService - PAN verification failed: name mismatch for PAN ZXCVB4321M
+2024-01-15 09:05:03 INFO PanService - PAN verification succeeded for PAN QWERT5678K
+2024-01-15 09:06:40 DEBUG NsdlApiClient - Response payload size 482 bytes for PAN QWERT5678K
+2024-01-15 09:08:12 INFO LoanService - Loan LN10021 approved
+2024-01-15 09:09:47 INFO LoanService - Loan LN10022 approved
+2024-01-15 09:10:03 INFO LoanService - Loan application LN10023 submitted
+2024-01-15 09:10:55 ERROR LoanService - Loan LN10023 rejected: credit score below threshold
+2024-01-15 09:11:20 INFO LoanService - Loan LN10024 approved
+2024-01-15 09:12:08 INFO PaymentService - Payment of amount 45230 completed for account 002134567890
+2024-01-15 09:12:44 INFO PaymentService - Payment of amount 12000 completed for account 002198765432
+2024-01-15 09:13:10 ERROR PaymentService - Payment failed for account 002134567890: insufficient funds
+2024-01-15 09:13:55 WARN PaymentService - Retrying payment for account 002134567890, attempt 1
+2024-01-15 09:14:30 ERROR PaymentService - Payment failed for account 002134567890: insufficient funds
+2024-01-15 09:15:02 FATAL PaymentService - Payment gateway connection lost, aborting batch
+2024-01-15 09:16:18 INFO KycController - Aadhaar verification initiated for aadhaar 234567890123
+2024-01-15 09:16:45 INFO NsdlApiClient - Calling UIDAI API for aadhaar 234567890123
+2024-01-15 09:17:20 ERROR KycController - Aadhaar verification failed: OTP expired for aadhaar 234567890123
+2024-01-15 09:18:02 INFO KycController - Aadhaar verification initiated for aadhaar 345678901234
+2024-01-15 09:18:40 INFO KycController - Aadhaar verification succeeded for aadhaar 345678901234
+2024-01-15 09:19:11 DEBUG AuthService - Session token refreshed for user_id 88213
+2024-01-15 09:20:33 INFO LoanService - Loan LN10025 approved
+2024-01-15 09:21:00 INFO LoanService - Loan LN10026 approved
+2024-01-15 09:21:47 ERROR LoanService - Loan LN10027 rejected: credit score below threshold
+2024-01-15 09:22:19 INFO PanService - PAN verification initiated for PAN LMNOP9988Q
+2024-01-15 09:22:20 INFO NsdlApiClient - Calling NSDL API for PAN LMNOP9988Q
+2024-01-15 09:23:05 ERROR PanService - PAN verification failed: name mismatch for PAN LMNOP9988Q
+2024-01-15 09:23:48 WARN KycController - Retrying PAN verification for PAN LMNOP9988Q, attempt 2
+2024-01-15 09:24:30 ERROR PanService - PAN verification failed: name mismatch for PAN LMNOP9988Q
+2024-01-15 09:25:12 INFO PaymentService - Payment of amount 78900 completed for account 002145671234
+2024-01-15 09:26:00 ERROR PaymentService - Payment failed for account 002198765432: insufficient funds
+2024-01-15 09:27:15 INFO AuthService - User login successful for user_id 77341
+2024-01-15 09:27:50 WARN AuthService - Multiple failed login attempts for user_id 77341
+2024-01-15 09:28:22 ERROR AuthService - Account locked due to repeated failed logins for user_id 77341
