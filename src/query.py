@@ -6,10 +6,14 @@ range -> optionally synthesize an answer with qwen2.5:7b-instruct, citing
 file/line for code.
 
 Usage:
-    python src/query.py "why do PAN verifications fail?"
-    python src/query.py "where is useState used?" --target code --repo-path "C:\\path\\to\\project"
-    python src/query.py "loan approvals today" --target logs --status fail
-    python src/query.py "some question" --no-llm      (skip the LLM, just show retrieved matches)
+    One-shot:
+        python src/query.py "why do PAN verifications fail?"
+        python src/query.py "where is useState used?" --target code --repo-path "C:\\path\\to\\project"
+        python src/query.py "loan approvals today" --target logs --status fail
+        python src/query.py "some question" --no-llm      (skip the LLM, just show retrieved matches)
+
+    Chat mode (omit the question -> interactive loop, settings apply to every turn):
+        python src/query.py --target code --repo-path "C:\\path\\to\\project"
 """
 
 import argparse
@@ -77,49 +81,30 @@ def build_code_context(results, repo_path):
     return "\n\n".join(blocks)
 
 
-def ask_llm(question, log_context, code_context, host):
+def ask_llm(question, log_context, code_context, host, history=None):
     sections = [f"QUESTION:\n{question}"]
     if log_context:
         sections.append(f"LOG CONTEXT:\n{log_context}")
     if code_context:
         sections.append(f"CODE CONTEXT:\n{code_context}")
 
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages.extend(history or [])
+    messages.append({"role": "user", "content": "\n\n".join(sections)})
+
     resp = requests.post(
         f"{host}/api/chat",
-        json={
-            "model": CHAT_MODEL,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": "\n\n".join(sections)},
-            ],
-            "stream": False,
-        },
+        json={"model": CHAT_MODEL, "messages": messages, "stream": False},
         timeout=300,
     )
     resp.raise_for_status()
     return resp.json()["message"]["content"]
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Query the log/code Chroma collections via Ollama.")
-    parser.add_argument("question")
-    parser.add_argument("--persist-dir", default="chroma_store")
-    parser.add_argument("--ollama-host", default=DEFAULT_OLLAMA_HOST)
-    parser.add_argument("--target", choices=["logs", "code", "both"], default="both")
-    parser.add_argument("--top-k-logs", type=int, default=5)
-    parser.add_argument("--top-k-code", type=int, default=3)
-    parser.add_argument("--status", choices=["fail", "success", "other"], default=None, help="Filter logs by status")
-    parser.add_argument("--level", default=None, help="Filter logs by log level, e.g. ERROR")
-    parser.add_argument("--repo-path", default=None, help="Root of the indexed codebase, needed to re-read code snippets from disk")
-    parser.add_argument("--no-llm", action="store_true", help="Skip qwen2.5 synthesis, just print retrieved matches")
-    args = parser.parse_args()
-
-    if not check_ollama(args.ollama_host):
-        print(f"ERROR: could not reach Ollama at {args.ollama_host}.", file=sys.stderr)
-        sys.exit(1)
-
-    client = chromadb.PersistentClient(path=args.persist_dir)
-    query_embedding = embed_query(args.question, args.ollama_host)
+def run_query(question, client, args, history=None):
+    """Runs one turn: retrieve from the configured collections, print matches,
+    optionally ask the LLM. Returns the LLM's answer (or None if --no-llm)."""
+    query_embedding = embed_query(question, args.ollama_host)
 
     log_context = ""
     code_context = ""
@@ -150,9 +135,57 @@ def main():
         print(code_context)
         print()
 
-    if not args.no_llm:
-        print(f"=== ANSWER ({CHAT_MODEL}) ===")
-        print(ask_llm(args.question, log_context, code_context, args.ollama_host))
+    if args.no_llm:
+        return None
+
+    print(f"=== ANSWER ({CHAT_MODEL}) ===")
+    answer = ask_llm(question, log_context, code_context, args.ollama_host, history)
+    print(answer)
+    return answer
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Query the log/code Chroma collections via Ollama.")
+    parser.add_argument("question", nargs="?", default=None, help="Omit to enter interactive chat mode")
+    parser.add_argument("--persist-dir", default="chroma_store")
+    parser.add_argument("--ollama-host", default=DEFAULT_OLLAMA_HOST)
+    parser.add_argument("--target", choices=["logs", "code", "both"], default="both")
+    parser.add_argument("--top-k-logs", type=int, default=5)
+    parser.add_argument("--top-k-code", type=int, default=3)
+    parser.add_argument("--status", choices=["fail", "success", "other"], default=None, help="Filter logs by status")
+    parser.add_argument("--level", default=None, help="Filter logs by log level, e.g. ERROR")
+    parser.add_argument("--repo-path", default=None, help="Root of the indexed codebase, needed to re-read code snippets from disk")
+    parser.add_argument("--no-llm", action="store_true", help="Skip qwen2.5 synthesis, just print retrieved matches")
+    args = parser.parse_args()
+
+    if not check_ollama(args.ollama_host):
+        print(f"ERROR: could not reach Ollama at {args.ollama_host}.", file=sys.stderr)
+        sys.exit(1)
+
+    client = chromadb.PersistentClient(path=args.persist_dir)
+
+    if args.question:
+        run_query(args.question, client, args)
+        return
+
+    print(f"Chat mode -- target={args.target}, repo-path={args.repo_path or '(not set)'}")
+    print("Type a question and press Enter. Type 'exit' or 'quit' to leave.\n")
+    history = []
+    while True:
+        try:
+            question = input("> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not question:
+            continue
+        if question.lower() in ("exit", "quit"):
+            break
+        answer = run_query(question, client, args, history)
+        if answer is not None:
+            history.append({"role": "user", "content": question})
+            history.append({"role": "assistant", "content": answer})
+        print()
 
 
 if __name__ == "__main__":
