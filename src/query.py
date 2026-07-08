@@ -30,9 +30,13 @@ CHAT_MODEL = "qwen2.5:7b-instruct"
 
 SYSTEM_PROMPT = (
     "You are a helpful assistant answering questions about production logs "
-    "and a codebase using only the context provided below. For code, cite "
-    "the exact file path and line numbers you used. If the context doesn't "
-    "contain the answer, say so instead of guessing."
+    "and a codebase. If LOG CONTEXT or CODE CONTEXT is provided below, answer "
+    "using only that context, and for code cite the exact file path and line "
+    "numbers you used. If the context doesn't contain the answer, say so "
+    "instead of guessing. If no context is provided at all, it means nothing "
+    "relevant was found in the index -- just respond naturally as a general "
+    "assistant (e.g. to greetings or small talk) instead of forcing an answer "
+    "about logs or code."
 )
 
 
@@ -60,6 +64,12 @@ def read_code_snippet(repo_path, meta):
     return "\n".join(lines[meta["start_line"] - 1 : meta["end_line"]])
 
 
+def filter_by_distance(results, max_distance):
+    if max_distance is None:
+        return results
+    return [r for r in results if r[2] <= max_distance]
+
+
 def build_log_context(results):
     lines = []
     for _id, meta, dist in results:
@@ -79,6 +89,10 @@ def build_code_context(results, repo_path):
             f"{meta['file']}:{meta['start_line']}-{meta['end_line']}\n```\n{snippet}\n```"
         )
     return "\n\n".join(blocks)
+
+
+def print_distances(label, results):
+    print(f"  [{label} distances: " + ", ".join(f"{dist:.3f}" for _id, meta, dist in results) + "]")
 
 
 def ask_llm(question, log_context, code_context, host, history=None):
@@ -114,6 +128,8 @@ def run_query(question, client, args, history=None):
             logs_collection = client.get_collection("prod_logs")
             where = {k: v for k, v in (("status", args.status), ("level", args.level)) if v}
             log_results = query_collection(logs_collection, query_embedding, args.top_k_logs, where)
+            print_distances("log", log_results)
+            log_results = filter_by_distance(log_results, args.max_distance)
             log_context = build_log_context(log_results)
         except Exception as e:
             print(f"WARNING: could not query prod_logs: {e}", file=sys.stderr)
@@ -122,6 +138,8 @@ def run_query(question, client, args, history=None):
         try:
             code_collection = client.get_collection("my_repo")
             code_results = query_collection(code_collection, query_embedding, args.top_k_code)
+            print_distances("code", code_results)
+            code_results = filter_by_distance(code_results, args.max_distance)
             code_context = build_code_context(code_results, args.repo_path)
         except Exception as e:
             print(f"WARNING: could not query my_repo: {e}", file=sys.stderr)
@@ -156,6 +174,13 @@ def main():
     parser.add_argument("--level", default=None, help="Filter logs by log level, e.g. ERROR")
     parser.add_argument("--repo-path", default=None, help="Root of the indexed codebase, needed to re-read code snippets from disk")
     parser.add_argument("--no-llm", action="store_true", help="Skip qwen2.5 synthesis, just print retrieved matches")
+    parser.add_argument(
+        "--max-distance", type=float, default=None,
+        help="Drop matches with distance above this (lower = more similar). "
+             "Distances are printed for every query; watch them for a few "
+             "questions to pick a sane cutoff, e.g. --max-distance 1.0. "
+             "Unset by default (no filtering).",
+    )
     args = parser.parse_args()
 
     if not check_ollama(args.ollama_host):
